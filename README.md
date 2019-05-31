@@ -1,2 +1,2 @@
-# Resume API
+# DevSkills API
 
