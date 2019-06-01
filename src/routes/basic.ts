@@ -12,6 +12,10 @@ const typeMap = {
   story: Story
 };
 
+
+// basicRouterFactory creates a router for a given entity
+// which creates a new object/gets all objects/gets one object with a given ID and does all basic data actions
+// This module works only for pre-considered entities.
 export function basicRouterFactory(entity: string): Router {
   const router = new Router();
 
