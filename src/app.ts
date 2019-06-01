@@ -1,7 +1,9 @@
+'use strict'
+
 import "reflect-metadata";
 import * as express from 'express';
 
-import router from './router';
+import { router } from './routes';
 
 
 const app = express();

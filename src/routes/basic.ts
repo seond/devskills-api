@@ -2,26 +2,24 @@
 
 import { Response, Request, Router } from 'express';
 import { Connection } from 'typeorm';
-import { connection } from './database';
+import { connection } from '../database';
 
-import { Skill } from './entity/Skill';
-import { Story } from './entity/Story';
-
-const router = new Router();
+import { Skill } from '../entity/Skill';
+import { Story } from '../entity/Story';
 
 const typeMap = {
   skill: Skill,
   story: Story
 };
 
-['skill', 'story'].forEach((entity: string) => {
-  const rtr = new Router();
+export function basicRouterFactory(entity: string): Router {
+  const router = new Router();
 
-  rtr.get('/', (_: any, res: Response) => {
+  router.get('/', (_: any, res: Response) => {
     res.send('got ' + entity);
   });
 
-  rtr.post('/', (req: Request, res: Response) => {
+  router.post('/', (req: Request, res: Response) => {
     const payload = req.body;
 
     if (!validatePayload(entity, payload)) {
@@ -43,22 +41,18 @@ const typeMap = {
     });
   });
 
-  rtr.get('/:objId', (req: Request, res: Response) => {
+  router.get('/:objId', (req: Request, res: Response) => {
     connection.then((conn: Connection) => {
-      // TODO: make it work! not working with this dynamically picked type
-      // Using repository should be a solution
-      conn.manager.findOne(typeMap[entity], req.params[`${entity}Id`]).then((obj: any) => {
-        res.status(200).json({
-          data: obj
-        });
+      conn.manager.findOne(typeMap[entity], req.params[`objId`]).then((obj: any) => {
+        const data = {};
+        data[entity] = obj;
+        res.status(200).json(data);
       });
     });
   });
 
-  router.use(`/${entity}`, rtr);
-});
-
-export default router;
+  return router;
+};
 
 function getNewObject(entity: string): any {
   switch (entity) {
@@ -70,8 +64,14 @@ function getNewObject(entity: string): any {
 }
 
 function validatePayload(entity: string, payload: any): Boolean {
-  if (!payload.name) {
-    return false;
+  switch (entity) {
+    case 'skill':
+      if (!payload.name) {
+        return false;
+      }
+      break;
+    case 'story':
+      break;
   }
   return true;
 }
