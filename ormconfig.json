@@ -6,7 +6,7 @@
    "synchronize": true,
    "logging": false,
    "entities": [
-      "src/entity/**/*.ts"
+      "src/model/entity/**/*.ts"
    ],
    "migrations": [
       "src/migration/**/*.ts"
@@ -15,7 +15,7 @@
       "src/subscriber/**/*.ts"
    ],
    "cli": {
-      "entitiesDir": "src/entity",
+      "entitiesDir": "src/model/entity",
       "migrationsDir": "src/migration",
       "subscribersDir": "src/subscriber"
    }

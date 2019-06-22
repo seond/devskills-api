@@ -18,7 +18,7 @@
     "no-redundant-jsdoc": false,
     "prefer-type-cast": false,
     "typedef": [
-      true,
+      false,
       "parameter",
       "arrow-parameter",
       "property-declaration",
