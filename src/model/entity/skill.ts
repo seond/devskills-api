@@ -1,4 +1,4 @@
-import {Entity, ObjectIdColumn, ObjectID, Column, ManyToMany} from 'typeorm';
+import {Entity, ObjectIdColumn, ObjectID, Column } from 'typeorm';
 
 @Entity()
 export class Skill {

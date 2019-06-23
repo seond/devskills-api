@@ -28,7 +28,6 @@ export function basicRouterFactory(entity: string): Router {
   });
 
   router.get('/:objId', (req: Request, res: Response) => {
-    console.log('what');
     getOneById(entity, req.params[`objId`]).then((obj: Object) => {
       const data = {};
       data[entity] = obj;
@@ -42,15 +41,7 @@ export function basicRouterFactory(entity: string): Router {
   return router;
 };
 
-// function getNewObject(entity: string): any {
-//   switch (entity) {
-//     case 'skill':
-//       return new Skill();
-//     case 'story':
-//       return new Story();
-//   }
-// }
-
+// TODO : use json validation
 function validatePayload(entity: string, payload: any): Boolean {
   switch (entity) {
     case 'skill':

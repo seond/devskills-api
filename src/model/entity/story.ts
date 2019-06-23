@@ -1,4 +1,4 @@
-import {Entity, ObjectIdColumn, ObjectID, Column, ManyToMany, JoinTable} from 'typeorm';
+import {Entity, ObjectIdColumn, ObjectID, Column } from 'typeorm';
 
 @Entity()
 export class Story {
