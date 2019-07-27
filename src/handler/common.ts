@@ -18,9 +18,9 @@ export function createEntity(entity: string, payload: Object): Promise<Object> {
 export function getOneById(entity: string, objId: string): Promise<Object> {
   switch (entity) {
     case 'skill':
-      return getSkillById(objId);
+      return getSkillById(objId, true);
     case 'story':
-      return getStoryById(objId);
+      return getStoryById(objId, true);
   }
 }
 

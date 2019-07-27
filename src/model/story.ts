@@ -1,10 +1,10 @@
 'use strict'
 
-import { Connection, ObjectID } from 'typeorm'
+import { Any, Connection, ObjectID } from 'typeorm'
 
 import { connection } from '../database';
 import { Story as Entity } from './entity/story';
-import { Skill } from './skill';
+import { Skill, getOneById as getSkillById } from './skill';
 import { SkillStory } from './entity/skillstory';
 
 export class Story {
@@ -14,7 +14,7 @@ export class Story {
   dbObject: Entity;
 
   constructor(payload?: any) {
-    if(payload) {
+    if (payload) {
       this.setPropertiesFromPayload(payload);
     }
     this.dbObject = new Entity();
@@ -24,20 +24,20 @@ export class Story {
   setPropertiesFromDbObject(dbObject: Entity) {
     this.dbObject = dbObject;
     this.id = dbObject.id;
-    if(dbObject.sentence) {
+    if (dbObject.sentence) {
       this.sentence = dbObject.sentence;
     }
   }
 
   setPropertiesFromPayload(payload: any) {
-    if(payload.sentence) {
+    if (payload.sentence) {
       this.sentence = payload.sentence;
     }
   }
 
   addSkill(skill: Skill) {
-    for(let i = 0; i < this.skills.length; i++) {
-      if(this.skills[i].id == skill.id) {
+    for (let i = 0; i < this.skills.length; i++) {
+      if (this.skills[i].id.toString() == skill.id.toString()) {
         return;
       }
     }
@@ -46,33 +46,55 @@ export class Story {
   }
 
   save(): Promise<Object> {
+    let _conn;
     return connection.then((conn: Connection) => {
-      // Delete all the relations and start over. Very primitive way, just, just, just for now.
-      // Later, it will modify how it is already stored.
-      return conn.manager.delete(SkillStory, {
-        storyId: this.id.toString()
-      }).then(() => {
-        const links = this.skills.map((skill: Skill) => {
-          const link = new SkillStory();
-          link.storyId = this.id.toString();
-          link.skillId = skill.id.toString();
-          return link;
+      _conn = conn;
+      if (this.id) {
+        // Delete all the relations and start over. Very primitive way, just, just, just for now.
+        // Later, it will modify how it is already stored.
+        return conn.manager.delete(SkillStory, {
+          storyId: this.id.toString()
+        }).then(() => {
+          const links = this.skills.map((skill: Skill) => {
+            const link = new SkillStory();
+            link.storyId = this.id.toString();
+            link.skillId = skill.id.toString();
+            return link;
+          });
+          return conn.manager.save(links);
         });
-        return conn.manager.save(links);
-      }).then(() => {
-        this.dbObject.sentence = this.sentence; // It's here for now but will be moved
-        return conn.manager.save(this.dbObject);
-      });
+      }
+    }).then(() => {
+      this.dbObject.sentence = this.sentence; // It's here for now but will be moved
+      return _conn.manager.save(this.dbObject);
     });
   }
 }
 
-export function getOneById(id: string): Promise<Object> {
+export function getOneById(id: string, cascade: boolean = false): Promise<Object> {
   return connection
-    .then((conn: Connection) => conn.manager.findOne(Entity, id))
-    .then((dbObject: Entity) => {
+    .then((conn: Connection) => Promise.all([conn, conn.manager.findOne(Entity, id)]))
+    .then((values: any[]) => {
+      let conn = values[0];
+      let dbObject = values[1];
       let obj = new Story();
       obj.setPropertiesFromDbObject(dbObject);
-      return obj;
+
+      if (cascade) {
+        return conn.manager.find(SkillStory, { storyId: id })
+          .then((relations: SkillStory[]) => {
+            let promises = relations.map(relation => {
+              return getSkillById(relation.skillId);
+            });
+            return Promise.all(promises);
+          }).then((skills: Skill[]) => {
+            skills.forEach((skill: Skill) => {
+              obj.skills.push(skill);
+            });
+            return obj;
+          });
+      } else {
+        return obj;
+      }
     });
 }

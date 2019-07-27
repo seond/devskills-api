@@ -1,11 +1,8 @@
 'use strict'
 
 import { Response, Request, Router } from 'express';
-import { Connection } from 'typeorm';
-
-import { connection } from '../database';
 import { basicRouterFactory } from './basic';
-import { createEntity, getOneById } from '../handler/common';
+import { getOneById } from '../handler/common';
 
 import { Skill } from '../model/skill';
 import { Story } from '../model/story';
@@ -38,6 +35,13 @@ storyRouter.post('/:storyId/skill/', (req: Request, res: Response) => {
 });
 // Tie an existing story to skill
 storyRouter.put('/:storyId/skill/:skillId', (req: Request, res: Response) => {
-
+  getOneById('story', req.params.storyId).then((story: Story) => {
+    return getOneById('skill', req.params.skillId).then((skill: Skill) => {
+      story.addSkill(skill);
+      return story.save();
+    });
+  }).then((obj: Story) => {
+    res.status(202).json(obj);
+  });
 });
 router.use('/story', storyRouter);
