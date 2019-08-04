@@ -98,3 +98,24 @@ export function getOneById(id: string, cascade: boolean = false): Promise<Object
       }
     });
 }
+
+export function getAll(): Promise<Object> {
+  return connection
+    .then((conn: Connection) => Promise.all([conn, conn.manager.find(Entity)]))
+    .then((values: any[]) => {
+      let conn = values[0];
+      let dbObjects = values[1];
+      
+      if (!dbObjects) {
+        return null;
+      }
+      
+      let objs = dbObjects.map(dbObject => {
+        let obj = new Story();
+        obj.setPropertiesFromDbObject(dbObject);
+        return obj;
+      });
+
+      return objs;
+    });
+}

@@ -1,7 +1,7 @@
 'use strict'
 
-import { Skill, getOneById as getSkillById } from '../model/skill';
-import { Story, getOneById as getStoryById } from '../model/story';
+import { Skill, getOneById as getSkillById, getAll as getSkills } from '../model/skill';
+import { Story, getOneById as getStoryById, getAll as getStories } from '../model/story';
 import { Skill as SkillEntity } from '../model/entity/skill';
 import { Story as StoryEntity } from '../model/entity/story';
 
@@ -13,6 +13,15 @@ const typeMap = {
 export function createEntity(entity: string, payload: Object): Promise<Object> {
   const obj = getNewObject(entity, payload);
   return obj.save();
+}
+
+export function getAll(entity: string): Promise<Object> {
+  switch (entity) {
+    case 'skill':
+      return getSkills();
+    case 'story':
+      return getStories();
+  }
 }
 
 export function getOneById(entity: string, objId: string): Promise<Object> {

@@ -102,5 +102,42 @@ export function getOneById(id: string, cascade: boolean = false): Promise<Object
       } else {
         return obj;
       }
-    });
+    }).then(pluckDbObject);
+}
+
+export function getAll(): Promise<Object> {
+  return connection
+    .then((conn: Connection) => Promise.all([conn, conn.manager.find(Entity)]))
+    .then((values: any[]) => {
+      let conn = values[0];
+      let dbObjects = values[1];
+      
+      if (!dbObjects) {
+        return null;
+      }
+      
+      let objs = dbObjects.map(dbObject => {
+        let obj = new Skill();
+        obj.setPropertiesFromDbObject(dbObject);
+        return obj;
+      });
+
+      return objs;
+    })
+    .then(pluckDbObject);
+}
+
+function pluckDbObject(obj: any) {
+  if (obj.length) {
+    for(let i = 0; i < obj.length; i++) {
+      pluckDbObject(obj[i]);
+    }
+  }
+  else {
+    if (obj.dbObject) {
+      delete obj.dbObject;
+    }
+  }
+
+  return obj;
 }

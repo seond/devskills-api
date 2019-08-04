@@ -1,7 +1,7 @@
 'use strict'
 
 import { Response, Request, Router } from 'express';
-import { createEntity, getOneById } from '../handler/common';
+import { createEntity, getAll, getOneById } from '../handler/common';
 
 // basicRouterFactory creates a router for a given entity
 // which creates a new object/gets all objects/gets one object with a given ID and does all basic data actions
@@ -10,7 +10,11 @@ export function basicRouterFactory(entity: string): Router {
   const router = new Router();
 
   router.get('/', (_: any, res: Response) => {
-    res.send('got all ' + entity);
+    getAll(entity).then((objs: Object[]) => {
+      const data = {};
+      data[entity] = objs;
+      res.status(200).json(data);
+    })
   });
 
   router.post('/', (req: Request, res: Response) => {
