@@ -7,6 +7,8 @@ import { Story as Entity } from './entity/story';
 import { Skill, getOneById as getSkillById } from './skill';
 import { SkillStory } from './entity/skillstory';
 
+import { pluckDbObject } from '../common/helpers';
+
 export class Story {
   id: ObjectID;
   sentence: string;
@@ -96,26 +98,22 @@ export function getOneById(id: string, cascade: boolean = false): Promise<Object
       } else {
         return obj;
       }
-    });
+    }).then(pluckDbObject);
 }
 
 export function getAll(): Promise<Object> {
   return connection
-    .then((conn: Connection) => Promise.all([conn, conn.manager.find(Entity)]))
-    .then((values: any[]) => {
-      let conn = values[0];
-      let dbObjects = values[1];
-      
+    .then((conn: Connection) => conn.manager.find(Entity))
+    .then((dbObjects: Entity[]) => {
       if (!dbObjects) {
         return null;
       }
-      
-      let objs = dbObjects.map(dbObject => {
+
+      return dbObjects.map(dbObject => {
         let obj = new Story();
         obj.setPropertiesFromDbObject(dbObject);
         return obj;
       });
-
-      return objs;
-    });
+    })
+    .then(pluckDbObject);
 }

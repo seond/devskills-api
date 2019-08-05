@@ -7,6 +7,8 @@ import { Skill as Entity } from './entity/skill';
 import { Story, getOneById as getStoryById } from './story';
 import { SkillStory } from './entity/skillstory';
 
+import { pluckDbObject } from '../common/helpers';
+
 export class Skill {
   id: ObjectID;
   name: string;
@@ -43,7 +45,6 @@ export class Skill {
         return;
       }
     }
-    console.log('passed it!');
     this.stories.push(story);
     story.addSkill(this);
   }
@@ -53,7 +54,6 @@ export class Skill {
     return connection.then((conn: Connection) => {
       _conn = conn;
       if (this.id) {
-        console.log("here it is");
         console.log(this.id.toString());
         // Delete all the relations and start over. Very primitive way, just, just, just for now.
         // Later, it will modify how it is already stored.
@@ -107,37 +107,17 @@ export function getOneById(id: string, cascade: boolean = false): Promise<Object
 
 export function getAll(): Promise<Object> {
   return connection
-    .then((conn: Connection) => Promise.all([conn, conn.manager.find(Entity)]))
-    .then((values: any[]) => {
-      let conn = values[0];
-      let dbObjects = values[1];
-      
+    .then((conn: Connection) => conn.manager.find(Entity))
+    .then((dbObjects: Entity[]) => {
       if (!dbObjects) {
         return null;
       }
-      
-      let objs = dbObjects.map(dbObject => {
+
+      return dbObjects.map(dbObject => {
         let obj = new Skill();
         obj.setPropertiesFromDbObject(dbObject);
         return obj;
       });
-
-      return objs;
     })
     .then(pluckDbObject);
-}
-
-function pluckDbObject(obj: any) {
-  if (obj.length) {
-    for(let i = 0; i < obj.length; i++) {
-      pluckDbObject(obj[i]);
-    }
-  }
-  else {
-    if (obj.dbObject) {
-      delete obj.dbObject;
-    }
-  }
-
-  return obj;
 }
