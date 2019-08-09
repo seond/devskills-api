@@ -32,10 +32,10 @@ const root = {
     return 'Hello world';
   },
   skills: () => {
-    return getSkills();
+    return getSkills(true);
   },
   stories: () => {
-    return getStories();
+    return getStories(true);
   },
   skill: (args) => {
     return getSkillById(args.id, true);

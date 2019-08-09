@@ -105,19 +105,44 @@ export function getOneById(id: string, cascade: boolean = false): Promise<Object
     }).then(pluckDbObject);
 }
 
-export function getAll(): Promise<Object> {
+export function getAll(cascade: boolean = false): Promise<Object> {
   return connection
-    .then((conn: Connection) => conn.manager.find(Entity))
-    .then((dbObjects: Entity[]) => {
+    .then((conn: Connection) => Promise.all([conn, conn.manager.find(Entity)]))
+    .then((values: any[]) => {
+      let conn = values[0];
+      let dbObjects = values[1];
+
       if (!dbObjects) {
         return null;
       }
 
-      return dbObjects.map(dbObject => {
-        let obj = new Skill();
-        obj.setPropertiesFromDbObject(dbObject);
-        return obj;
-      });
+      if (cascade) {
+        let promises = dbObjects.map(dbObject => {
+          return conn.manager.find(SkillStory, { skillId: dbObject.id.toString() })
+            .then((relations: SkillStory[]) => {
+              return Promise.all([dbObject, ...(relations.map(relation => {
+                return getStoryById(relation.storyId);
+              }))]);
+            });
+        });
+
+        return Promise.all(promises).then((cascaded) => {
+          return cascaded.map((items: any[]) => {
+            let obj = new Skill();
+            obj.setPropertiesFromDbObject(items[0]);
+            for (let i = 1; i < items.length; i++) {
+              obj.stories.push(items[i]);
+            }
+            return obj;
+          });
+        });
+      } else {
+        return dbObjects.map(dbObject => {
+          let obj = new Skill();
+          obj.setPropertiesFromDbObject(dbObject);
+          return obj;
+        });
+      }
     })
     .then(pluckDbObject);
 }
