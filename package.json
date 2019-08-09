@@ -31,6 +31,8 @@
    "author": "Seon Kim",
    "dependencies": {
       "express": "^4.17.1",
+      "express-graphql": "^0.9.0",
+      "graphql": "^14.4.2",
       "mongodb": "^3.0.8",
       "reflect-metadata": "^0.1.10",
       "tslib": "~1.9.3",

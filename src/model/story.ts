@@ -1,6 +1,6 @@
 'use strict'
 
-import { Any, Connection, ObjectID } from 'typeorm'
+import { Connection, ObjectID } from 'typeorm'
 
 import { connection } from '../database';
 import { Story as Entity } from './entity/story';
