@@ -7,8 +7,6 @@ import { Story as Entity } from './entity/story';
 import { Skill, getOneById as getSkillById } from './skill';
 import { SkillStory } from './entity/skillstory';
 
-import { pluckDbObject } from '../common/helpers';
-
 export class Story {
   id: ObjectID;
   sentence: string;
@@ -98,7 +96,7 @@ export function getOneById(id: string, cascade: boolean = false): Promise<Object
       } else {
         return obj;
       }
-    }).then(pluckDbObject);
+    });
 }
 
 export function getAll(cascade: boolean = false): Promise<Object> {
@@ -139,6 +137,5 @@ export function getAll(cascade: boolean = false): Promise<Object> {
           return obj;
         });
       }
-    })
-    .then(pluckDbObject);
+    });
 }

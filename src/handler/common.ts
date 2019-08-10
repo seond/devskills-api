@@ -15,6 +15,13 @@ export function createEntity(entity: string, payload: Object): Promise<Object> {
   return obj.save();
 }
 
+export function updateEntityById(entity: string, objId: string, payload: Object): Promise<Object> {
+  return getOneById(entity, objId).then((obj: Skill | Story) => {
+    obj.setPropertiesFromPayload(payload);
+    return obj.save();
+  });
+}
+
 export function getAll(entity: string): Promise<Object> {
   switch (entity) {
     case 'skill':
