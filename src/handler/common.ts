@@ -48,3 +48,9 @@ function getNewObject(entity: string, payload: any): any {
       return new Story(payload);
   }
 }
+
+export function deleteEntityById(entity: string, objId: string): Promise<Object> {
+  return getOneById(entity, objId).then((obj: Skill | Story) => {
+    return obj.delete();
+  });
+}

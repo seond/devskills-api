@@ -69,6 +69,16 @@ export class Story {
       return _conn.manager.save(this.dbObject);
     });
   }
+
+  delete(): Promise<Object> {
+    return connection.then((conn: Connection) => {
+      return conn.manager.delete(SkillStory, {
+        storyId: this.id.toString()
+      }).then(() => conn);
+    }).then((conn: Connection) => {
+      return conn.manager.remove(this.dbObject);
+    });
+  }
 }
 
 export function getOneById(id: string, cascade: boolean = false): Promise<Object> {

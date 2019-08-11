@@ -36,9 +36,7 @@ export class Skill {
   }
 
   addStory(story: Story) {
-    console.log(this.stories);
     for (let i = 0; i < this.stories.length; i++) {
-      console.log(story.id.toString() + " :: " + this.stories[i].id);
       if (this.stories[i].id.toString() === story.id.toString()) {
         return;
       }
@@ -52,13 +50,11 @@ export class Skill {
     return connection.then((conn: Connection) => {
       _conn = conn;
       if (this.id) {
-        console.log(this.id.toString());
         // Delete all the relations and start over. Very primitive way, just, just, just for now.
         // Later, it will modify how it is already stored.
         return conn.manager.delete(SkillStory, {
           skillId: this.id.toString()
         }).then((rt) => {
-          console.log(rt);
           const links = this.stories.map((story: Story) => {
             const link = new SkillStory();
             link.skillId = this.id.toString();
@@ -71,6 +67,16 @@ export class Skill {
     }).then(() => {
       this.dbObject.name = this.name; // It's here for now but will be moved
       return _conn.manager.save(this.dbObject);
+    });
+  }
+
+  delete(): Promise<Object> {
+    return connection.then((conn: Connection) => {
+      return conn.manager.delete(SkillStory, {
+        skillId: this.id.toString()
+      }).then(() => conn);
+    }).then((conn: Connection) => {
+      return conn.manager.remove(this.dbObject);
     });
   }
 }

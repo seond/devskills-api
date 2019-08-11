@@ -1,7 +1,7 @@
 'use strict'
 
 import { Response, Request, Router } from 'express';
-import { createEntity, getAll, getOneById, updateEntityById } from '../handler/common';
+import { createEntity, deleteEntityById, getAll, getOneById, updateEntityById } from '../handler/common';
 
 import { pluckDbObject } from '../common/helpers';
 
@@ -52,9 +52,15 @@ export function basicRouterFactory(entity: string): Router {
     }
 
     updateEntityById(entity, req.params['objId'], payload).then(pluckDbObject).then((saved: Object) => {
-      res.status(200).json({
+      res.status(204).json({
         data: saved
       });
+    });
+  });
+
+  router.delete('/:objId', (req: Request, res: Response) => {
+    deleteEntityById(entity, req.params['objId']).then(() => {
+      res.status(200).send();
     });
   });
 
