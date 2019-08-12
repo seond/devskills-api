@@ -22,21 +22,21 @@ export function updateEntityById(entity: string, objId: string, payload: Object)
   });
 }
 
-export function getAll(entity: string): Promise<Object> {
+export function getAll(entity: string, cascade: boolean = false): Promise<Object> {
   switch (entity) {
     case 'skill':
-      return getSkills();
+      return getSkills(cascade);
     case 'story':
-      return getStories();
+      return getStories(cascade);
   }
 }
 
-export function getOneById(entity: string, objId: string): Promise<Object> {
+export function getOneById(entity: string, objId: string, cascade: boolean = false): Promise<Object> {
   switch (entity) {
     case 'skill':
-      return getSkillById(objId, true);
+      return getSkillById(objId, cascade);
     case 'story':
-      return getStoryById(objId, true);
+      return getStoryById(objId, cascade);
   }
 }
 

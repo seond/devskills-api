@@ -2,8 +2,7 @@
 import * as graphqlHTTP from 'express-graphql';
 import { buildSchema } from 'graphql';
 
-import { getOneById as getSkillById, getAll as getSkills } from './model/skill';
-import { getOneById as getStoryById, getAll as getStories } from './model/story';
+import { createEntity, deleteEntityById, getOneById, getAll } from './handler/common';
 
 const schema = buildSchema(`
   type Query {
@@ -25,6 +24,21 @@ const schema = buildSchema(`
     sentence: String
     skills: [Skill!]
   }
+
+  input SkillInput {
+    name: String
+  }
+
+  input StoryInput {
+    sentence: String
+  }
+
+  type Mutation {
+    createSkill(input: SkillInput): Skill
+    createStory(input: StoryInput): Story
+    deleteSkillById(id: ID): Boolean
+    deleteStoryById(id: ID): Boolean
+  }
 `);
 
 const root = {
@@ -32,26 +46,46 @@ const root = {
     return 'Hello world';
   },
   skills: () => {
-    return getSkills(true);
+    return getAll('skill', true);
   },
   stories: () => {
-    return getStories(true);
+    return getAll('story', true);
   },
-  skill: (args) => {
-    return getSkillById(args.id, true);
+  skill: args => {
+    return getOneById('skill', args.id, true);
   },
-  story: (args) => {
-    return getStoryById(args.id, true);
+  story: args => {
+    return getOneById('story', args.id, true);
   },
   Skill: {
-    id: (parent) => parent.id,
-    name: (parent) => parent.name,
-    stories: (parent) => parent.stories
+    id: parent => parent.id,
+    name: parent => parent.name,
+    stories: parent => parent.stories
   },
   Story: {
-    id: (parent) => parent.id,
-    sentence: (parent) => parent.sentence,
-    skills: (parent) => parent.skills
+    id: parent => parent.id,
+    sentence: parent => parent.sentence,
+    skills: parent => parent.skills
+  },
+  createSkill: ({input}) => {
+    return createEntity('skill', input);
+  },
+  createStory: ({input}) => {
+    return createEntity('story', input);
+  },
+  deleteSkillById: args => {
+    return deleteEntityById('skill', args.id).then(() => {
+      return true;
+    }).catch(() => {
+      return false;
+    });;
+  },
+  deleteStoryById: args => {
+    return deleteEntityById('story', args.id).then(() => {
+      return true;
+    }).catch(() => {
+      return false;
+    });
   }
 };
 
