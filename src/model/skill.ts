@@ -149,3 +149,21 @@ export function getAll(cascade: boolean = false): Promise<Object> {
       }
     });
 }
+
+export function getExistingOrCreateNewByName(name: String): Promise<Object> {
+  return connection
+    .then((conn: Connection) => Promise.all([conn, conn.manager.find('skill', { name })]))
+    .then((values: any[]) => {
+      let conn = values[0];
+      let result = values[1];
+
+      if (result && result.length > 0) {
+        return result;
+      }
+
+      let obj = new Skill({
+        name
+      });
+      return obj.save();
+    });
+}

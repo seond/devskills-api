@@ -4,8 +4,10 @@ import { Connection, ObjectID } from 'typeorm'
 
 import { connection } from '../database';
 import { Story as Entity } from './entity/story';
-import { Skill, getOneById as getSkillById } from './skill';
+import { Skill, getExistingOrCreateNewByName as getMentionedSkill, getOneById as getSkillById } from './skill';
 import { SkillStory } from './entity/skillstory';
+
+import { parseWrappedKeywords } from '../common/helpers';
 
 export class Story {
   id: ObjectID;
@@ -47,26 +49,38 @@ export class Story {
 
   save(): Promise<Object> {
     let _conn;
-    return connection.then((conn: Connection) => {
-      _conn = conn;
-      if (this.id) {
-        // Delete all the relations and start over. Very primitive way, just, just, just for now.
-        // Later, it will modify how it is already stored.
-        return conn.manager.delete(SkillStory, {
-          storyId: this.id.toString()
-        }).then(() => {
-          const links = this.skills.map((skill: Skill) => {
-            const link = new SkillStory();
-            link.storyId = this.id.toString();
-            link.skillId = skill.id.toString();
-            return link;
-          });
-          return conn.manager.save(links);
-        });
+
+    // TODO: Save skills to the temp story right before save it for the first time. Kind of hacky... Need to be refactored.
+    let skillPromise = Promise.all(parseWrappedKeywords(this.sentence).map((skill: String) => {
+      return getMentionedSkill(skill);
+    })).then((skills: Skill[]) => {
+      for(let i = 0; i < skills.length; i++) {
+        this.skills.push(skills[i]);
       }
-    }).then(() => {
-      this.dbObject.sentence = this.sentence; // It's here for now but will be moved
-      return _conn.manager.save(this.dbObject);
+    });
+
+    return skillPromise.then(() => {
+      return connection.then((conn: Connection) => {
+        _conn = conn;
+        if (this.id) {
+          // Delete all the relations and start over. Very primitive way, just, just, just for now.
+          // Later, it will modify how it is already stored.
+          return conn.manager.delete(SkillStory, {
+            storyId: this.id.toString()
+          }).then(() => {
+            const links = this.skills.map((skill: Skill) => {
+              const link = new SkillStory();
+              link.storyId = this.id.toString();
+              link.skillId = skill.id.toString();
+              return link;
+            });
+            return conn.manager.save(links);
+          });
+        }
+      }).then(() => {
+        this.dbObject.sentence = this.sentence; // It's here for now but will be moved
+        return _conn.manager.save(this.dbObject);
+      });
     });
   }
 
