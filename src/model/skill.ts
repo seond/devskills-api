@@ -9,13 +9,14 @@ import { SkillStory } from './entity/skillstory';
 
 export class Skill {
   id: ObjectID;
+  owner: string;
   name: string;
   stories: Story[];
   dbObject: Entity;
 
-  constructor(payload?: any) {
-    if (payload) {
-      this.setPropertiesFromPayload(payload);
+  constructor(userId?: string, payload?: any) {
+    if (userId && payload) {
+      this.setPropertiesFromPayload(userId, payload);
     }
     this.dbObject = new Entity();
     this.stories = [];
@@ -24,15 +25,13 @@ export class Skill {
   setPropertiesFromDbObject(dbObject: Entity) {
     this.dbObject = dbObject;
     this.id = dbObject.id;
-    if (dbObject.name) {
-      this.name = dbObject.name;
-    }
+    this.owner = dbObject.owner;
+    this.name = dbObject.name;
   }
 
-  setPropertiesFromPayload(payload: any) {
-    if (payload.name) {
-      this.name = payload.name;
-    }
+  setPropertiesFromPayload(userId: string, payload: any) {
+    this.owner = userId;
+    this.name = payload.name;
   }
 
   addStory(story: Story) {
@@ -65,6 +64,7 @@ export class Skill {
         });
       }
     }).then(() => {
+      this.dbObject.owner = this.owner;
       this.dbObject.name = this.name; // It's here for now but will be moved
       return _conn.manager.save(this.dbObject);
     });
@@ -81,12 +81,16 @@ export class Skill {
   }
 }
 
-export function getOneById(id: string, cascade: boolean = false): Promise<Object> {
+export function getOneById(userId: string, id: string, cascade: boolean = false): Promise<Object> {
   return connection
     .then((conn: Connection) => Promise.all([conn, conn.manager.findOne(Entity, id)]))
     .then((values: any[]) => {
       let conn = values[0];
       let dbObject = values[1];
+      if (!dbObject && dbObject.owner !== userId) {
+        return null;
+      }
+
       let obj = new Skill();
       obj.setPropertiesFromDbObject(dbObject);
 
@@ -94,7 +98,7 @@ export function getOneById(id: string, cascade: boolean = false): Promise<Object
         return conn.manager.find(SkillStory, { skillId: id })
           .then((relations: SkillStory[]) => {
             let promises = relations.map(relation => {
-              return getStoryById(relation.storyId);
+              return getStoryById(userId, relation.storyId);
             });
             return Promise.all(promises);
           }).then((stories: Story[]) => {
@@ -109,9 +113,9 @@ export function getOneById(id: string, cascade: boolean = false): Promise<Object
     });
 }
 
-export function getAll(cascade: boolean = false): Promise<Object> {
+export function getAll(userId: string, cascade: boolean = false): Promise<Object> {
   return connection
-    .then((conn: Connection) => Promise.all([conn, conn.manager.find(Entity)]))
+    .then((conn: Connection) => Promise.all([conn, conn.manager.find(Entity, { owner: userId })]))
     .then((values: any[]) => {
       let conn = values[0];
       let dbObjects = values[1];
@@ -125,7 +129,7 @@ export function getAll(cascade: boolean = false): Promise<Object> {
           return conn.manager.find(SkillStory, { skillId: dbObject.id.toString() })
             .then((relations: SkillStory[]) => {
               return Promise.all([dbObject, ...(relations.map(relation => {
-                return getStoryById(relation.storyId);
+                return getStoryById(userId, relation.storyId);
               }))]);
             });
         });
@@ -150,20 +154,18 @@ export function getAll(cascade: boolean = false): Promise<Object> {
     });
 }
 
-export function getExistingOrCreateNewByName(name: String): Promise<Object> {
+export function getExistingOrCreateNewByName(owner: string, name: String): Promise<Object> {
   return connection
-    .then((conn: Connection) => Promise.all([conn, conn.manager.find('skill', { name })]))
+    .then((conn: Connection) => Promise.all([conn, conn.manager.find('skill', { owner, name })]))
     .then((values: any[]) => {
       let conn = values[0];
       let result = values[1];
 
       if (result && result.length > 0) {
-        return result;
+        return result[0];
       }
 
-      let obj = new Skill({
-        name
-      });
+      let obj = new Skill(owner, { name });
       return obj.save();
     });
 }

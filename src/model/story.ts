@@ -11,13 +11,14 @@ import { parseWrappedKeywords } from '../common/helpers';
 
 export class Story {
   id: ObjectID;
+  owner: string;
   sentence: string;
   skills: Skill[];
   dbObject: Entity;
 
-  constructor(payload?: any) {
-    if (payload) {
-      this.setPropertiesFromPayload(payload);
+  constructor(userId?: string, payload?: any) {
+    if (userId && payload) {
+      this.setPropertiesFromPayload(userId, payload);
     }
     this.dbObject = new Entity();
     this.skills = [];
@@ -26,15 +27,13 @@ export class Story {
   setPropertiesFromDbObject(dbObject: Entity) {
     this.dbObject = dbObject;
     this.id = dbObject.id;
-    if (dbObject.sentence) {
-      this.sentence = dbObject.sentence;
-    }
+    this.owner = dbObject.owner;
+    this.sentence = dbObject.sentence;
   }
 
-  setPropertiesFromPayload(payload: any) {
-    if (payload.sentence) {
-      this.sentence = payload.sentence;
-    }
+  setPropertiesFromPayload(userId: string, payload: any) {
+    this.owner = userId;
+    this.sentence = payload.sentence;
   }
 
   addSkill(skill: Skill) {
@@ -48,38 +47,37 @@ export class Story {
   }
 
   save(): Promise<Object> {
-    let _conn;
-
     // TODO: Save skills to the temp story right before save it for the first time. Kind of hacky... Need to be refactored.
     let skillPromise = Promise.all(parseWrappedKeywords(this.sentence).map((skill: String) => {
-      return getMentionedSkill(skill);
+      return getMentionedSkill(this.owner, skill);
     })).then((skills: Skill[]) => {
-      for(let i = 0; i < skills.length; i++) {
+      for (let i = 0; i < skills.length; i++) {
         this.skills.push(skills[i]);
       }
     });
 
     return skillPromise.then(() => {
       return connection.then((conn: Connection) => {
-        _conn = conn;
-        if (this.id) {
-          // Delete all the relations and start over. Very primitive way, just, just, just for now.
-          // Later, it will modify how it is already stored.
-          return conn.manager.delete(SkillStory, {
-            storyId: this.id.toString()
-          }).then(() => {
-            const links = this.skills.map((skill: Skill) => {
-              const link = new SkillStory();
-              link.storyId = this.id.toString();
-              link.skillId = skill.id.toString();
-              return link;
-            });
-            return conn.manager.save(links);
+        this.dbObject.owner = this.owner;
+        this.dbObject.sentence = this.sentence;
+        return Promise.all([conn, conn.manager.save(this.dbObject)]);
+      }).then((values: any[]) => {
+        let conn = values[0];
+        let saved = values[1];
+
+        // Delete all the relations and start over. Very primitive way, just, just, just for now.
+        // Later, it will modify how it is already stored.
+        return conn.manager.delete(SkillStory, {
+          storyId: saved.id.toString()
+        }).then(() => {
+          const links = this.skills.map((skill: Skill) => {
+            const link = new SkillStory();
+            link.storyId = saved.id.toString();
+            link.skillId = skill.id.toString();
+            return link;
           });
-        }
-      }).then(() => {
-        this.dbObject.sentence = this.sentence; // It's here for now but will be moved
-        return _conn.manager.save(this.dbObject);
+          return conn.manager.save(links);
+        });
       });
     });
   }
@@ -95,12 +93,16 @@ export class Story {
   }
 }
 
-export function getOneById(id: string, cascade: boolean = false): Promise<Object> {
+export function getOneById(userId: string, id: string, cascade: boolean = false): Promise<Object> {
   return connection
     .then((conn: Connection) => Promise.all([conn, conn.manager.findOne(Entity, id)]))
     .then((values: any[]) => {
       let conn = values[0];
       let dbObject = values[1];
+      if (!dbObject && dbObject.owner !== userId) {
+        return null;
+      }
+
       let obj = new Story();
       obj.setPropertiesFromDbObject(dbObject);
 
@@ -108,7 +110,7 @@ export function getOneById(id: string, cascade: boolean = false): Promise<Object
         return conn.manager.find(SkillStory, { storyId: id })
           .then((relations: SkillStory[]) => {
             let promises = relations.map(relation => {
-              return getSkillById(relation.skillId);
+              return getSkillById(userId, relation.skillId);
             });
             return Promise.all(promises);
           }).then((skills: Skill[]) => {
@@ -120,12 +122,14 @@ export function getOneById(id: string, cascade: boolean = false): Promise<Object
       } else {
         return obj;
       }
+    }).catch(error => {
+      console.error(error);
     });
 }
 
-export function getAll(cascade: boolean = false): Promise<Object> {
+export function getAll(userId: string, cascade: boolean = false): Promise<Object> {
   return connection
-    .then((conn: Connection) => Promise.all([conn, conn.manager.find(Entity)]))
+    .then((conn: Connection) => Promise.all([conn, conn.manager.find(Entity, { owner: userId })]))
     .then((values: any[]) => {
       let conn = values[0];
       let dbObjects = values[1];
@@ -139,7 +143,7 @@ export function getAll(cascade: boolean = false): Promise<Object> {
           return conn.manager.find(SkillStory, { storyId: dbObject.id.toString() })
             .then((relations: SkillStory[]) => {
               return Promise.all([dbObject, ...(relations.map(relation => {
-                return getSkillById(relation.skillId);
+                return getSkillById(userId, relation.skillId);
               }))]);
             });
         });

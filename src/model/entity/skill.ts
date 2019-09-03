@@ -7,5 +7,8 @@ export class Skill {
     id: ObjectID;
 
     @Column()
+    owner: string;
+
+    @Column()
     name: string;
 }

@@ -1,6 +1,7 @@
 'use strict'
 
 import { Response, Request, Router } from 'express';
+import { authenticate } from '../middleware/bearer';
 import { createEntity, deleteEntityById, getAll, getOneById, updateEntityById } from '../handler/common';
 
 import { pluckDbObject } from '../common/helpers';
@@ -11,8 +12,10 @@ import { pluckDbObject } from '../common/helpers';
 export function basicRouterFactory(entity: string): Router {
   const router = new Router();
 
-  router.get('/', (_: any, res: Response) => {
-    getAll(entity).then(pluckDbObject).then((objs: Object[]) => {
+  router.use(authenticate);
+
+  router.get('/', (req: Request, res: Response) => {
+    getAll(entity, req.user.userId).then(pluckDbObject).then((objs: Object[]) => {
       const data = {};
       data[entity] = objs;
       res.status(200).json(data);
@@ -26,7 +29,7 @@ export function basicRouterFactory(entity: string): Router {
       res.status(400).send();
     }
 
-    createEntity(entity, payload).then(pluckDbObject).then((saved: Object) => {
+    createEntity(entity, req.user.userId, payload).then(pluckDbObject).then((saved: Object) => {
       res.status(202).json({
         data: saved
       });
@@ -34,7 +37,7 @@ export function basicRouterFactory(entity: string): Router {
   });
 
   router.get('/:objId', (req: Request, res: Response) => {
-    getOneById(entity, req.params['objId']).then(pluckDbObject).then((obj: Object) => {
+    getOneById(entity, req.user.userId, req.params['objId']).then(pluckDbObject).then((obj: Object) => {
       const data = {};
       data[entity] = obj;
       res.status(200).json(data);
@@ -51,7 +54,7 @@ export function basicRouterFactory(entity: string): Router {
       res.status(400).send();
     }
 
-    updateEntityById(entity, req.params['objId'], payload).then(pluckDbObject).then((saved: Object) => {
+    updateEntityById(entity, req.user.userId, req.params['objId'], payload).then(pluckDbObject).then((saved: Object) => {
       res.status(204).json({
         data: saved
       });
@@ -59,7 +62,7 @@ export function basicRouterFactory(entity: string): Router {
   });
 
   router.delete('/:objId', (req: Request, res: Response) => {
-    deleteEntityById(entity, req.params['objId']).then(() => {
+    deleteEntityById(entity, req.user.userId, req.params['objId']).then(() => {
       res.status(200).send();
     });
   });

@@ -10,47 +10,47 @@ const typeMap = {
   story: StoryEntity
 };
 
-export function createEntity(entity: string, payload: Object): Promise<Object> {
-  const obj = getNewObject(entity, payload);
+export function createEntity(entity: string, userId: string, payload: Object): Promise<Object> {
+  const obj = getNewObject(entity, userId, payload);
   return obj.save();
 }
 
-export function updateEntityById(entity: string, objId: string, payload: Object): Promise<Object> {
-  return getOneById(entity, objId).then((obj: Skill | Story) => {
-    obj.setPropertiesFromPayload(payload);
+export function updateEntityById(entity: string, userId: string, objId: string, payload: Object): Promise<Object> {
+  return getOneById(entity, userId, objId).then((obj: Skill | Story) => {
+    obj.setPropertiesFromPayload(userId, payload);
     return obj.save();
   });
 }
 
-export function getAll(entity: string, cascade: boolean = false): Promise<Object> {
+export function getAll(entity: string, userId: string, cascade: boolean = false): Promise<Object> {
   switch (entity) {
     case 'skill':
-      return getSkills(cascade);
+      return getSkills(userId, cascade);
     case 'story':
-      return getStories(cascade);
+      return getStories(userId, cascade);
   }
 }
 
-export function getOneById(entity: string, objId: string, cascade: boolean = false): Promise<Object> {
+export function getOneById(entity: string, userId: string, objId: string, cascade: boolean = false): Promise<Object> {
   switch (entity) {
     case 'skill':
-      return getSkillById(objId, cascade);
+      return getSkillById(userId, objId, cascade);
     case 'story':
-      return getStoryById(objId, cascade);
+      return getStoryById(userId, objId, cascade);
   }
 }
 
-function getNewObject(entity: string, payload: any): any {
+function getNewObject(entity: string, userId: string, payload: any): any {
   switch (entity) {
     case 'skill':
-      return new Skill(payload);
+      return new Skill(userId, payload);
     case 'story':
-      return new Story(payload);
+      return new Story(userId, payload);
   }
 }
 
-export function deleteEntityById(entity: string, objId: string): Promise<Object> {
-  return getOneById(entity, objId).then((obj: Skill | Story) => {
+export function deleteEntityById(entity: string, userId: string, objId: string): Promise<Object> {
+  return getOneById(entity, userId, objId).then((obj: Skill | Story) => {
     return obj.delete();
   });
 }

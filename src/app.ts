@@ -15,6 +15,9 @@ app.use(cors())
 app.use(express.json());
 
 app.use('/api', router);
-app.use('/graphql', graphQL);
+
+if (!process.env.DISABLE_GRAPHQL) {
+  app.use('/graphql', graphQL);
+}
 
 app.listen(port, () => console.log(`Devskills API listening on port ${port}!`));
