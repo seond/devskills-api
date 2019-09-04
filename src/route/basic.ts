@@ -9,9 +9,10 @@ import { pluckDbObject } from '../common/helpers';
 // basicRouterFactory creates a router for a given entity
 // which creates a new object/gets all objects/gets one object with a given ID and does all basic data actions
 // This module works only for pre-considered entities.
-export function basicRouterFactory(entity: string): Router {
-  const router = new Router();
-
+export function basicRouterFactory(entity: string, router?: Router): Router {
+  if (!router) {
+    router = new Router();
+  }
   router.use(authenticate);
 
   router.get('/', (req: Request, res: Response) => {
@@ -37,7 +38,7 @@ export function basicRouterFactory(entity: string): Router {
   });
 
   router.get('/:objId', (req: Request, res: Response) => {
-    getOneById(entity, req.user.userId, req.params['objId']).then(pluckDbObject).then((obj: Object) => {
+    getOneById(entity, req.user.userId, req.params['objId'], true).then(pluckDbObject).then((obj: Object) => {
       const data = {};
       data[entity] = obj;
       res.status(200).json(data);
@@ -83,6 +84,10 @@ function validatePayload(entity: string, payload: any): Boolean {
         return false;
       }
       break;
+    case 'chapter':
+      if (!payload.title || !payload.type) {
+        return false;
+      }
   }
   return true;
 }
