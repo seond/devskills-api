@@ -5,7 +5,9 @@ import { Connection, ObjectID } from 'typeorm'
 import { connection } from '../database';
 import { Chapter as Entity } from './entity/chapter';
 import { Skill, getOneById as getSkillById } from './skill';
-import { SkillChapter } from './entity/skillchapter';
+import { Story, getOneById as getStoryById } from './story';
+import { SkillChapter as SkillChapterEntity } from './entity/skillchapter';
+import { Story as StoryEntity } from './entity/story';
 import { ILink } from '../interface/link';
 
 export class Chapter {
@@ -15,6 +17,7 @@ export class Chapter {
   type: string;
   link: ILink;
   skills: Skill[];
+  stories: Story[];
   dbObject: Entity;
 
   constructor(userId?: string, payload?: any) {
@@ -23,6 +26,7 @@ export class Chapter {
     }
     this.dbObject = new Entity();
     this.skills = [];
+    this.stories = [];
   }
 
   setPropertiesFromDbObject(dbObject: Entity) {
@@ -50,6 +54,15 @@ export class Chapter {
     this.skills.push(skill);
   }
 
+  addStory(story: Story) {
+    for (let i = 0; i < this.stories.length; i++) {
+      if (this.stories[i].id.toString() == story.id.toString()) {
+        return;
+      }
+    }
+    this.stories.push(story);
+  }
+
   save(): Promise<Object> {
     return connection.then((conn: Connection) => {
       this.dbObject.owner = this.owner;
@@ -63,11 +76,11 @@ export class Chapter {
 
       // Delete all the relations and start over. Very primitive way, just, just, just for now.
       // Later, it will modify how it is already stored.
-      return conn.manager.delete(SkillChapter, {
+      return conn.manager.delete(SkillChapterEntity, {
         chapterId: saved.id.toString()
       }).then(() => {
         const links = this.skills.map((skill: Skill) => {
-          const link = new SkillChapter();
+          const link = new SkillChapterEntity();
           link.chapterId = saved.id.toString();
           link.skillId = skill.id.toString();
           return link;
@@ -81,7 +94,11 @@ export class Chapter {
 
   delete(): Promise<Object> {
     return connection.then((conn: Connection) => {
-      return conn.manager.delete(SkillChapter, {
+      return conn.manager.delete(SkillChapterEntity, {
+        chapterId: this.id.toString()
+      }).then(() => conn);
+    }).then((conn: Connection) => {
+      return conn.manager.delete(Story, {
         chapterId: this.id.toString()
       }).then(() => conn);
     }).then((conn: Connection) => {
@@ -104,18 +121,29 @@ export function getOneById(userId: string, id: string, cascade: boolean = false)
       obj.setPropertiesFromDbObject(dbObject);
 
       if (cascade) {
-        return conn.manager.find(SkillChapter, { chapterId: id })
-          .then((relations: SkillChapter[]) => {
-            let promises = relations.map(relation => {
+        let promise_skills: Promise<Object[]> = conn.manager.find(SkillChapterEntity, { chapterId: id })
+          .then((relations: SkillChapterEntity[]) => {
+            let promises: Promise<Object>[] = relations.map(relation => {
               return getSkillById(userId, relation.skillId);
             });
             return Promise.all(promises);
-          }).then((skills: Skill[]) => {
-            skills.forEach((skill: Skill) => {
-              obj.skills.push(skill);
-            });
-            return obj;
           });
+        let promise_stories: Promise<Object[]> = conn.manager.find(StoryEntity, { chapterId: id });
+
+        return Promise.all([promise_skills, promise_stories]).then((values: any) => {
+          let skills = values[0];
+          let stories = values[1];
+
+          skills.forEach((skill: Skill) => {
+            obj.skills.push(skill);
+          });
+
+          stories.forEach((story: Story) => {
+            obj.stories.push(story);
+          });
+
+          return obj as any;
+        });
       } else {
         return obj;
       }
@@ -137,8 +165,8 @@ export function getAll(userId: string, cascade: boolean = false): Promise<Object
 
       if (cascade) {
         let promises = dbObjects.map(dbObject => {
-          return conn.manager.find(SkillChapter, { chapterId: dbObject.id.toString() })
-            .then((relations: SkillChapter[]) => {
+          return conn.manager.find(SkillChapterEntity, { chapterId: dbObject.id.toString() })
+            .then((relations: SkillChapterEntity[]) => {
               return Promise.all([dbObject, ...(relations.map(relation => {
                 return getSkillById(userId, relation.skillId);
               }))]);

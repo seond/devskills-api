@@ -4,11 +4,13 @@ import { Connection, ObjectID } from 'typeorm'
 
 import { connection } from '../database';
 import { Story as Entity } from './entity/story';
+import { Chapter } from '/chapter';
 import { Skill, getExistingOrCreateNewByName as getMentionedSkill, getOneById as getSkillById } from './skill';
 
 export class Story {
   id: ObjectID;
   owner: string;
+  chapter: Chapter;
   sentence: string;
   dbObject: Entity;
 
@@ -23,17 +25,20 @@ export class Story {
     this.dbObject = dbObject;
     this.id = dbObject.id;
     this.owner = dbObject.owner;
+    this.chapterId = dbObject.chapterId;
     this.sentence = dbObject.sentence;
   }
 
   setPropertiesFromPayload(userId: string, payload: any) {
     this.owner = userId;
+    this.chapterId = payload.chapterId;
     this.sentence = payload.sentence;
   }
 
   save(): Promise<Object> {
     return connection.then((conn: Connection) => {
       this.dbObject.owner = this.owner;
+      this.dbObject.chapterId = this.chapterId;
       this.dbObject.sentence = this.sentence;
       return conn.manager.save(this.dbObject);
     });

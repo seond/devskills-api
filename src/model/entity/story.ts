@@ -1,5 +1,4 @@
 import {Entity, ObjectIdColumn, ObjectID, Column } from 'typeorm';
-import { cpus } from 'os';
 
 @Entity()
 export class Story {
@@ -9,6 +8,9 @@ export class Story {
 
     @Column()
     owner: string;
+
+    @Column()
+    chapterId: string;
 
     @Column()
     sentence: string;
