@@ -2,9 +2,10 @@
 
 import { Response, Request, Router } from 'express';
 import { basicRouterFactory } from './basic';
-import { getOneById } from '../handler/common';
+import { createEntity, getOneById } from '../handler/common';
 
 import { Skill } from '../model/skill';
+import { Story } from '../model/story';
 import { Chapter } from '../model/chapter';
 
 export const router = new Router();
@@ -16,7 +17,7 @@ const storyRouter = basicRouterFactory('story');
 router.use('/story', storyRouter);
 
 const chapterRouter = basicRouterFactory('chapter');
-// Tie an existing chapter to skill
+
 chapterRouter.put('/:chapterId/skill/:skillId', (req: Request, res: Response) => {
   getOneById('chapter', req.user.userId, req.params.chapterId).then((chapter: Chapter) => {
     return getOneById('skill', req.user.userId, req.params.skillId).then((skill: Skill) => {
@@ -24,6 +25,18 @@ chapterRouter.put('/:chapterId/skill/:skillId', (req: Request, res: Response) =>
       return chapter.save();
     });
   }).then((obj: Chapter) => {
+    res.status(202).json(obj);
+  });
+});
+
+chapterRouter.post('/:chapterId/story', (req: Request, res: Response) => {
+  getOneById('chapter', req.user.userId, req.params.chapterId, true).then((chapter: Chapter) => {
+    const payload = req.body;
+    payload.chapter = chapter;
+    return createEntity('story', req.user.userId, payload).then((story: Story) => {
+      return story;
+    });
+  }).then((obj: Story) => {
     res.status(202).json(obj);
   });
 });

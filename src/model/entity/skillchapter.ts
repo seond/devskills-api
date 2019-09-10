@@ -9,6 +9,6 @@ export class SkillChapter {
     @Column()
     skillId: string;
 
-    @Column()
+    @Column({ name: "chapterId" })
     chapterId: string;
 }
