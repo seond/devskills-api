@@ -30,9 +30,9 @@ chapterRouter.put('/:chapterId/skill/:skillId', (req: Request, res: Response) =>
 });
 
 chapterRouter.post('/:chapterId/story', (req: Request, res: Response) => {
-  getOneById('chapter', req.user.userId, req.params.chapterId).then((chapter: Chapter) => {
+  getOneById('chapter', req.user.userId, req.params.chapterId, true).then((chapter: Chapter) => {
     const payload = req.body;
-    payload.chapterId = chapter.id.toString();
+    payload.chapter = chapter;
     return createEntity('story', req.user.userId, payload).then((story: Story) => {
       return story;
     });

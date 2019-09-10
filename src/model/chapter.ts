@@ -74,18 +74,25 @@ export class Chapter {
       let conn = values[0];
       let saved = values[1];
 
-      // Delete all the relations and start over. Very primitive way, just, just, just for now.
-      // Later, it will modify how it is already stored.
-      return conn.manager.delete(SkillChapterEntity, {
+      return conn.manager.find(SkillChapterEntity, {
         chapterId: saved.id.toString()
-      }).then(() => {
-        const links = this.skills.map((skill: Skill) => {
-          const link = new SkillChapterEntity();
-          link.chapterId = saved.id.toString();
-          link.skillId = skill.id.toString();
-          return link;
-        });
-        return conn.manager.save(links);
+      }).then((relations: SkillChapterEntity[]) => {
+        let skillsToLink = [];
+        for (let i = 0; i < this.skills.length; i++) {
+          let j;
+          for (j = 0; j < relations.length; j++) {
+            if (this.skills[i].id.toString() === relations[j].skillId) {
+              break;
+            }
+          }
+          if (j === relations.length) {
+            let link = new SkillChapterEntity();
+            link.chapterId = saved.id.toString();
+            link.skillId = this.skills[i].id.toString();
+            skillsToLink.push(conn.manager.save(link));
+          }
+        }
+        return Promise.all(skillsToLink);
       }).then(() => {
         return saved;
       });

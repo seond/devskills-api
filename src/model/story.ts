@@ -3,9 +3,11 @@
 import { Connection, ObjectID } from 'typeorm'
 
 import { connection } from '../database';
+import { parseWrappedKeywords } from '../common/helpers';
+
 import { Story as Entity } from './entity/story';
-import { Chapter } from '/chapter';
-import { Skill, getExistingOrCreateNewByName as getMentionedSkill, getOneById as getSkillById } from './skill';
+import { Chapter, getOneById as getChapterById } from './chapter';
+import { Skill, getExistingOrCreateNewByName as getMentionedSkill } from './skill';
 
 export class Story {
   id: ObjectID;
@@ -25,23 +27,35 @@ export class Story {
     this.dbObject = dbObject;
     this.id = dbObject.id;
     this.owner = dbObject.owner;
-    this.chapterId = dbObject.chapterId;
     this.sentence = dbObject.sentence;
   }
 
   setPropertiesFromPayload(userId: string, payload: any) {
     this.owner = userId;
-    this.chapterId = payload.chapterId;
+    this.chapter = payload.chapter;
     this.sentence = payload.sentence;
   }
 
   save(): Promise<Object> {
-    return connection.then((conn: Connection) => {
-      this.dbObject.owner = this.owner;
-      this.dbObject.chapterId = this.chapterId;
-      this.dbObject.sentence = this.sentence;
-      return conn.manager.save(this.dbObject);
-    });
+    let promises: Promise<void | Connection | Skill | Object>[] = [];
+    promises.push(connection);
+    let skills = parseWrappedKeywords(this.sentence);
+    for (let i = 0; i < skills.length; i++) {
+      promises.push(getMentionedSkill(this.owner, skills[i]))
+    }
+    return Promise.all(promises)
+      .then((values: any) => {
+        let conn = values[0];
+        for (let i = 1; i < values.length; i++) {
+          this.chapter.addSkill(values[i]);
+        }
+        return this.chapter.save().then(() => conn);
+      }).then((conn: Connection) => {
+        this.dbObject.owner = this.owner;
+        this.dbObject.chapterId = this.chapter.id.toString();
+        this.dbObject.sentence = this.sentence;
+        return conn.manager.save(this.dbObject);
+      });
   }
 
   delete(): Promise<Object> {
@@ -59,8 +73,15 @@ export function getOneById(userId: string, id: string): Promise<Object> {
         return null;
       }
 
+      return Promise.all([dbObject, getChapterById(userId, dbObject.chapterId.toString())])
+    })
+    .then((values: [Entity, Chapter]) => {
+      let dbObject = values[0];
+      let chapter = values[1];
+
       let obj = new Story();
       obj.setPropertiesFromDbObject(dbObject);
+      obj.chapter = chapter;
 
       return obj;
     });

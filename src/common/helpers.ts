@@ -1,7 +1,6 @@
-const objectKeyList = ['skills', 'stories'];
+const objectKeyList = ['skills', 'stories', 'chapter'];
 
 export function pluckDbObject(obj: any) {
-  console.log(obj);
   if (obj.length) {
     for(let i = 0; i < obj.length; i++) {
       pluckDbObject(obj[i]);
