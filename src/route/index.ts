@@ -19,13 +19,24 @@ router.use('/story', storyRouter);
 const chapterRouter = basicRouterFactory('chapter');
 
 chapterRouter.put('/:chapterId/skill/:skillId', (req: Request, res: Response) => {
-  getOneById('chapter', req.user.userId, req.params.chapterId).then((chapter: Chapter) => {
+  getOneById('chapter', req.user.userId, req.params.chapterId, true).then((chapter: Chapter) => {
     return getOneById('skill', req.user.userId, req.params.skillId).then((skill: Skill) => {
       chapter.addSkill(skill);
       return chapter.save();
     });
   }).then((obj: Chapter) => {
     res.status(202).json(obj);
+  });
+});
+
+chapterRouter.delete('/:chapterId/skill/:skillId', (req: Request, res: Response) => {
+  getOneById('chapter', req.user.userId, req.params.chapterId, true).then((chapter: Chapter) => {
+    return getOneById('skill', req.user.userId, req.params.skillId).then((skill: Skill) => {
+      chapter.removeSkill(skill);
+      return chapter.save();
+    });
+  }).then((obj: Chapter) => {
+    res.status(200).json(obj);
   });
 });
 
@@ -40,4 +51,13 @@ chapterRouter.post('/:chapterId/story', (req: Request, res: Response) => {
     res.status(202).json(obj);
   });
 });
+
+chapterRouter.delete('/:chapterId/story/:storyId', (req: Request, res: Response) => {
+  getOneById('story', req.user.userId, req.params.storyId).then((story: Story) => {
+    return story.delete();
+  }).then((obj: Story) => {
+    res.status(200).json(obj);
+  });
+});
+
 router.use('/chapter', chapterRouter);

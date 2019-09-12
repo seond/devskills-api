@@ -63,6 +63,18 @@ export class Chapter {
     this.stories.push(story);
   }
 
+  removeSkill(skill: Skill): boolean {
+    for (let i = 0; i < this.skills.length; i++) {
+      if (this.skills[i].id.toString() === skill.id.toString()) {
+        console.log("removing skill " + skill.id.toString())
+        this.skills.splice(i, 1);
+        console.log(this.skills);
+        return true;
+      }
+    }
+    return false;
+  }
+
   save(): Promise<Object> {
     return connection.then((conn: Connection) => {
       this.dbObject.owner = this.owner;
@@ -77,7 +89,7 @@ export class Chapter {
       return conn.manager.find(SkillChapterEntity, {
         chapterId: saved.id.toString()
       }).then((relations: SkillChapterEntity[]) => {
-        let skillsToLink = [];
+        let skillsToUpdate = [];
         for (let i = 0; i < this.skills.length; i++) {
           let j;
           for (j = 0; j < relations.length; j++) {
@@ -89,10 +101,26 @@ export class Chapter {
             let link = new SkillChapterEntity();
             link.chapterId = saved.id.toString();
             link.skillId = this.skills[i].id.toString();
-            skillsToLink.push(conn.manager.save(link));
+            skillsToUpdate.push(conn.manager.save(link));
           }
         }
-        return Promise.all(skillsToLink);
+        for (let i = 0; i < relations.length; i++){
+          let j;
+          for (j = 0; j < this.skills.length; j++) {
+            if (relations[i].skillId === this.skills[j].id.toString()) {
+              break;
+            }
+          }
+          if (j === this.skills.length) {
+            console.log("skill in db not found " + relations[i].skillId)
+            console.log(this.skills)
+            skillsToUpdate.push(conn.manager.delete(SkillChapterEntity, {
+              chapterId: saved.id.toString(),
+              skillId: relations[i].skillId
+            }));
+          }
+        }
+        return Promise.all(skillsToUpdate);
       }).then(() => {
         return saved;
       });
