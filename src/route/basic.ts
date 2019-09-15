@@ -1,7 +1,7 @@
 'use strict'
 
 import { Response, Request, Router } from 'express';
-import { authenticate } from '../middleware/bearer';
+import { authenticate } from '../middleware/auth';
 import { createEntity, deleteEntityById, getAll, getOneById, updateEntityById } from '../handler/common';
 
 import { pluckDbObject } from '../common/helpers';

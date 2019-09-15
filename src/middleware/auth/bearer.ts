@@ -1,7 +1,7 @@
 import * as passport from 'passport';
 import { Strategy } from 'passport-http-bearer';
 
-import { AccessToken, getOneByAccessToken } from '../model/accesstoken';
+import { AccessToken, getOneByAccessToken } from '../../model/accesstoken';
 
 const strategy = new Strategy((token, done) => {
   // to return a user instead of a token

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <% include ./partials/head %>
+    </head>
+    <body>
+        <main>
+            <div><h1>Login with SeonAuth</h1></div>
+            <div><button onclick="goToLogin();">Go</button></div>
+        </main>
+        <script>
+            function goToLogin() {
+                window.location = '<%-cfg.AUTH_HOST%>/auth/authorise?client_id=devskills&redirect_uri=http://localhost:4000/auth/callback';
+            }
+        </script>
+    </body>
+</html>
