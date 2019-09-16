@@ -18,7 +18,7 @@ router.use('/story', storyRouter);
 
 const chapterRouter = basicRouterFactory('chapter');
 
-chapterRouter.put('/:chapterId/skill/:skillId', (req: Request, res: Response) => {
+chapterRouter.post('/:chapterId/skill/:skillId', (req: Request, res: Response) => {
   getOneById('chapter', req.user.userId, req.params.chapterId, true).then((chapter: Chapter) => {
     return getOneById('skill', req.user.userId, req.params.skillId).then((skill: Skill) => {
       chapter.addSkill(skill);

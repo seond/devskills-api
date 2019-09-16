@@ -66,9 +66,7 @@ export class Chapter {
   removeSkill(skill: Skill): boolean {
     for (let i = 0; i < this.skills.length; i++) {
       if (this.skills[i].id.toString() === skill.id.toString()) {
-        console.log("removing skill " + skill.id.toString())
         this.skills.splice(i, 1);
-        console.log(this.skills);
         return true;
       }
     }
@@ -112,8 +110,6 @@ export class Chapter {
             }
           }
           if (j === this.skills.length) {
-            console.log("skill in db not found " + relations[i].skillId)
-            console.log(this.skills)
             skillsToUpdate.push(conn.manager.delete(SkillChapterEntity, {
               chapterId: saved.id.toString(),
               skillId: relations[i].skillId
