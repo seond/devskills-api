@@ -9,7 +9,7 @@ import { middleware as graphQL } from './graphql';
 
 
 const app = express();
-const port = 4000;
+const port = process.env.PORT || 4000;
 
 // tslint:disable-next-line:no-backbone-get-set-outside-model
 app.set('view engine', 'ejs');

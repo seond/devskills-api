@@ -1,10 +1,13 @@
-{
+module.exports = {
    "type": "mongodb",
-   "host": "localhost",
-   "port": 27017,
-   "database": "devskills",
+   "host": process.env.DB_HOST || "localhost",
+   "port": process.env.DB_PORT || 27017,
+   "username": process.env.DB_USER,
+   "password": process.env.DB_PASS,
+   "database": process.env.DB_DATABASE || "devskills",
+   "authSource": "admin",
    "synchronize": true,
-   "logging": false,
+   "logging": true,
    "entities": [
       "src/model/entity/**/*.ts"
    ],
@@ -19,4 +22,4 @@
       "migrationsDir": "src/migration",
       "subscribersDir": "src/subscriber"
    }
-}
+};
