@@ -7,6 +7,7 @@ import { Chapter as Entity } from './entity/chapter';
 import { Skill, getOneById as getSkillById } from './skill';
 import { Story, getOneById as getStoryById } from './story';
 import { SkillChapter as SkillChapterEntity } from './entity/skillchapter';
+import { Skill as SkillEntity } from './entity/skill';
 import { Story as StoryEntity } from './entity/story';
 import { ILink } from '../interface/link';
 
@@ -195,21 +196,34 @@ export function getAll(userId: string, cascade: boolean = false): Promise<Object
       }
 
       if (cascade) {
-        let promises = dbObjects.map(dbObject => {
+        let promise_skills = dbObjects.map(dbObject => {
           return conn.manager.find(SkillChapterEntity, { chapterId: dbObject.id.toString() })
             .then((relations: SkillChapterEntity[]) => {
-              return Promise.all([dbObject, ...(relations.map(relation => {
+              return Promise.all(relations.map(relation => {
                 return getSkillById(userId, relation.skillId);
-              }))]);
+              }));
             });
         });
+        let promise_stories = dbObjects.map(dbObject => {
+          return conn.manager.find(StoryEntity, { chapterId: dbObject.id.toString() });
+        });
 
-        return Promise.all(promises).then((cascaded) => {
-          return cascaded.map((items: any[]) => {
+        return Promise.all([...promise_skills, ...promise_stories]).then((cascaded) => {
+          return dbObjects.map((dbObject, idx) => {
             let obj = new Chapter();
-            obj.setPropertiesFromDbObject(items[0]);
-            for (let i = 1; i < items.length; i++) {
-              obj.skills.push(items[i]);
+            obj.setPropertiesFromDbObject(dbObject);
+            let skills = cascaded[idx];
+            if (skills) {
+              for (let i = 0; i < skills.length; i++) {
+                obj.skills.push(skills[i]);
+              }
+            }
+
+            let stories = cascaded[dbObjects.length + idx];
+            if (stories) {
+              for (let i = 0; i < stories.length; i++) {
+                obj.stories.push(stories[i]);
+              }
             }
             return obj;
           });
