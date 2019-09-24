@@ -16,7 +16,7 @@ export function basicRouterFactory(entity: string, router?: Router): Router {
   router.use(authenticate);
 
   router.get('/', (req: Request, res: Response) => {
-    getAll(entity, req.user.userId).then(pluckDbObject).then((objs: Object[]) => {
+    getAll(entity, req.user.userId, true).then(pluckDbObject).then((objs: Object[]) => {
       const data = {};
       data[entity] = objs;
       res.status(200).json(data);
